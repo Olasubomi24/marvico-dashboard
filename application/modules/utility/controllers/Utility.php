@@ -84,6 +84,13 @@ class Utility extends MX_Controller{
         return array('status_code' => '0', 'message' => 'Successful', 'result' => $result);
     }
 
+    public function transactions() {
+        $sql = "    
+    SELECT user_id, email, phonenumber, register_name, sender_name, paid_amount, tran_reference, payment_status, subtotal, total_amount, payment_dt FROM `marvico_food_txn` WHERE payment_status IS NOT NULL ";
+        $result = $this->db->query($sql)->result_array();
+        return array('status_code' => '0', 'message' => 'Successful', 'result' => $result);
+    }
+
     public function product() {
         $sql = " SELECT Product_id, Product_name FROM products";
         $result = $this->db->query($sql)->result_array();
@@ -245,6 +252,272 @@ public function deletepackages($package_id) {
     $this->db->where('package_id', $package_id);
     return $this->db->delete('packages'); // Corrected table name
 }
+
+public function get_all_process_detail() {
+    return $this->db->get('process_details')->result();
+}
+
+public function get_process_detail_by_id($id) {
+    return $this->db->get_where('process_details', array('id' => $id))->row();
+}
+
+// public function insert_process_detail($process_detail_data) {
+//     return $this->db->insert('process_details', $process_detail_data);
+// }
+
+public function update_process_detail($id, $process_detail_data) {
+    $this->db->where('id', $id);
+    return $this->db->update('process_details', $process_detail_data);
+}
+
+public function delete_process_detail($id) {
+    $this->db->where('id', $id);
+    return $this->db->delete('process_details');
+}
+public function get_all_offal_detail() {
+    return $this->db->get('offal_details')->result();
+}
+
+public function get_offal_detail_by_id($id) {
+    return $this->db->get_where('offal_details', array('id' => $id))->row();
+}
+
+public function insert_offal_detail($offal_detail_data) {
+    return $this->db->insert('offal_details', $offal_detail_data);
+}
+
+public function update_offal_detail($id, $offal_detail_data) {
+    $this->db->where('id', $id);
+    return $this->db->update('offal_details', $offal_detail_data);
+}
+
+public function delete_sale_detail($id) {
+    $this->db->where('id', $id);
+    return $this->db->delete('sale_details');
+}
+
+public function get_all_sale_detail() {
+    return $this->db->get('sale_details')->result();
+}
+
+public function get_sale_detail_by_id($id) {
+    return $this->db->get_where('sale_details', array('id' => $id))->row();
+}
+
+// public function insert_sale_detail($sale_detail_data) {
+//     return $this->db->insert('sale_details', $sale_detail_data);
+// }
+
+public function update_sale_detail($id, $sale_detail_data) {
+    $this->db->where('id', $id);
+    return $this->db->update('sale_details', $sale_detail_data);
+}
+
+public function delete_offal_detail($id) {
+    $this->db->where('id', $id);
+    return $this->db->delete('offal_details');
+}
+
+public function insert_process_detail($process_detail_data) {
+    // Step 1: Fetch the latest `product_balance` for the given kilogram and product type from `process_details`
+    $this->db->select('product_balance');
+    $this->db->from('process_details');
+    $this->db->where('killogramm', $process_detail_data['killogramm']);
+    $this->db->where('product_type', $process_detail_data['product_type']);
+    $this->db->order_by('id', 'DESC'); // Get the most recent entry
+    $result = $this->db->get()->row();
+
+    // Get current balance or default to 0 if no prior entries
+    $current_balance = $result ? (float)$result->product_balance : 0;
+
+    // Set old balance to the current balance
+    $process_detail_data['old_product_balance'] = $current_balance;
+
+    // Calculate new product balance
+    $new_balance = $current_balance + (float)$process_detail_data['total'];
+    $process_detail_data['product_balance'] = $new_balance;
+
+    // Step 2: Insert into `process_details`
+    $this->db->insert('process_details', $process_detail_data);
+
+    // Step 3: Insert into `transaction_details` as a credit (CR) transaction
+    $transaction_data = [
+        'killogramm' => $process_detail_data['killogramm'],
+        'quantity' => $process_detail_data['quantity'],
+        'product_type' => $process_detail_data['product_type'],
+        'total' => $process_detail_data['total'],
+        'old_product_balance' => $current_balance, // Storing the old balance here
+        'product_balance' => $new_balance, // New balance after addition
+        'transaction_type' => 'CR', // Debit transaction type
+        'time_in' => $process_detail_data['time_in'],
+        'time_out' => $process_detail_data['time_out']
+    ];
+    $this->db->insert('transaction_details', $transaction_data);
+
+    return true;
+}
+
+public function insert_sale_detail($sale_detail_data) {
+    // Step 1: Fetch the latest product balance for the given kilogram and product type from `process_details`
+    $this->db->select('id, product_balance, time_out');
+    $this->db->from('process_details');
+    $this->db->where('killogramm', $sale_detail_data['killogramm']);
+    $this->db->where('product_type', $sale_detail_data['product_type']);
+    $result = $this->db->order_by('id', 'DESC')->get()->row();
+
+    // Check if there is enough balance for the sale
+    if ($result) {
+        $current_balance = (float)$result->product_balance;
+        
+        // Ensure the sale total does not exceed the available balance
+        if ($sale_detail_data['total'] > $current_balance) {
+            // Return error message
+            return "Insufficient stock for {$sale_detail_data['product_type']}. Only {$current_balance} available.";
+        }
+
+        // Calculate the new balance after the sale
+        $new_balance = $current_balance - (float)$sale_detail_data['total'];
+
+        // Step 2: Update `process_details` with the new balance and time_out
+        $update_data = [
+            'product_balance' => $new_balance,
+            'sale_balance' => $sale_detail_data['total'],
+            'time_out' => date('Y-m-d H:i:s'), // Update the last sale time
+            'old_product_balance' => $current_balance // Set the old balance before sale
+        ];
+        $this->db->where('id', $result->id);
+        $this->db->update('process_details', $update_data);
+    } else {
+        // No balance found, handle this case (return error message if necessary)
+        return "No stock available for {$sale_detail_data['product_type']}.";
+    }
+
+    // Step 3: Add `product_balance` to `sale_detail_data` and insert into `sale_details`
+    $sale_detail_data['product_balance'] = $new_balance;
+    $this->db->insert('sale_details', $sale_detail_data);
+
+    // Step 4: Insert into `transaction_details` as a debit (DR) transaction
+    $transaction_data = [
+        'killogramm' => $sale_detail_data['killogramm'],
+        'quantity' => $sale_detail_data['quantity'],
+        'product_type' => $sale_detail_data['product_type'],
+        'total' => $sale_detail_data['total'], // Positive for sale (debit)
+        'old_product_balance' => $current_balance, // Old balance before sale
+        'product_balance' => $new_balance,
+        'transaction_type' => 'DR', // Debit transaction type
+        'time_in' => $sale_detail_data['time_in'],
+        'time_out' => date('Y-m-d H:i:s')
+    ];
+    $this->db->insert('transaction_details', $transaction_data);
+
+    return true;
+}
+
+
+
+// public function insert_sale_detail($sale_detail_data) {
+//     // Step 1: Fetch the current product balance for the given kilogram and product type from `process_details`
+//     $this->db->select('product_balance');
+//     $this->db->from('process_details');
+//     $this->db->where('killogramm', $sale_detail_data['killogramm']);
+//     $this->db->where('product_type', $sale_detail_data['product_type']);
+//     $result = $this->db->order_by('id', 'DESC')->get()->row();
+
+//     // Calculate the remaining balance after the sale
+//     if ($result) {
+//         $current_balance = (float)$result->product_balance;
+//         $new_balance = $current_balance - (float)$sale_detail_data['total'];
+
+//         // Ensure balance is not negative
+//         if ($new_balance < 0) {
+//             return false; // Optionally, handle this case or return an error
+//         }
+
+//         // Update product balance in `process_details`
+//         $update_data = [
+//             'product_balance' => $new_balance,
+//             'old_product_balance' => $current_balance // Store the old balance
+//         ];
+//         $this->db->where('id', $result->id);
+//         $this->db->update('process_details', $update_data);
+//     } else {
+//         // No balance found, handle this case (return false or an error if necessary)
+//         return false;
+//     }
+
+//     // Step 2: Add `product_balance` to `sale_detail_data` and insert into `sale_details`
+//     $sale_detail_data['product_balance'] = $new_balance;
+//     $this->db->insert('sale_details', $sale_detail_data);
+
+//     // Step 3: Insert into `transaction_details` as a debit (DR) transaction
+//     $transaction_data = [
+//         'killogramm' => $sale_detail_data['killogramm'],
+//         'quantity' => $sale_detail_data['quantity'],
+//         'product_type' => $sale_detail_data['product_type'],
+//         'total' => $sale_detail_data['total'], // Positive for sale (debit)
+//         'old_product_balance' => $current_balance, // Storing the old balance before deduction
+//         'product_balance' => $new_balance, // New balance after deduction
+//         'time_in' => $sale_detail_data['time_in'],
+//         'time_out' => $sale_detail_data['time_out']
+//     ];
+//     $this->db->insert('transaction_details', $transaction_data);
+
+//     return true;
+// }
+
+
+// public function insert_sale_detail($sale_detail_data) {
+//     // Step 1: Fetch the current product balance for the given kilogram and product type from `process_details`
+//     $this->db->select('product_balance');
+//     $this->db->from('process_details');
+//     $this->db->where('killogramm', $sale_detail_data['killogramm']);
+//     $this->db->where('product_type', $sale_detail_data['product_type']);
+//     $result = $this->db->order_by('id', 'DESC')->get()->row();
+
+//     // Calculate the remaining balance after the sale
+//     if ($result) {
+//         $current_balance = (float)$result->product_balance;
+//         $new_balance = $current_balance - (float)$sale_detail_data['total'];
+
+//         // Ensure balance is not negative
+//         if ($new_balance < 0) {
+//             return false; // Optionally, handle this case or return an error
+//         }
+
+//         // Update product balance in `process_details`
+//         $update_data = [
+//             'product_balance' => $new_balance,
+//             'old_product_balance' => $current_balance // Store the old balance
+//         ];
+//         $this->db->where('id', $result->id);
+//         $this->db->update('process_details', $update_data);
+//     } else {
+//         // No balance found, handle this case (return false or an error if necessary)
+//         return false;
+//     }
+
+//     // Step 2: Insert into `sale_details`
+//     $this->db->insert('sale_details', $sale_detail_data);
+
+//     // Step 3: Insert into `transaction_details` as a debit (DR) transaction
+//     $transaction_data = [
+//         'killogramm' => $sale_detail_data['killogramm'],
+//         'quantity' => $sale_detail_data['quantity'],
+//         'product_type' => $sale_detail_data['product_type'],
+//         'total' => -$sale_detail_data['total'], // Negative for sale (debit)
+//         'old_product_balance' => $current_balance, // Storing the old balance here
+//         'product_balance' => $new_balance,
+//         'time_in' => $sale_detail_data['time_in'],
+//         'time_out' => $sale_detail_data['time_out']
+//     ];
+//     $this->db->insert('transaction_details', $transaction_data);
+
+//     return true;
+// }
+
+
+
+
 
 }
 ?>

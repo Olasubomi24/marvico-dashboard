@@ -46,7 +46,7 @@ if (!isset($_SESSION['customer_email'])) {
 
                 <!-- ========   change your logo hear   ============ -->
                 <img class="mr-2" src="<?php echo base_url('assets/images/user.jpg.png') ?>" alt="" class="logo logo-lg"
-                    width="30%"><span style="font-size:15px; color:#fff; font-weight: bold;">Marvico Food </span>
+                    width="30%"><span style="font-size:13px; color:#fff; font-weight: bold;">Nourished Choice Food  </span>
                 <img src="<?php echo base_url('assets/images/user.jpg.png') ?>" alt="" class="logo logo-sm">
             </a>
         </div>
@@ -88,7 +88,17 @@ if (!isset($_SESSION['customer_email'])) {
                             <i data-feather="check-circle"></i>
                         </span>
                         <span class="pc-mtext">
-                            Data info
+                           Add Food Detail
+                        </span>
+                    </a>
+                </li>
+                <li class="pc-item">
+                    <a href="<?php echo site_url('transaction_details/transaction') ?>" class="pc-link">
+                        <span class="pc-micon">
+                            <i data-feather="check-circle"></i>
+                        </span>
+                        <span class="pc-mtext">
+                           Food  Transaction details
                         </span>
                     </a>
                 </li>
@@ -198,8 +208,97 @@ if (!isset($_SESSION['customer_email'])) {
                                 </span>
                             </a>
                         </li>
+                        <li class="pc-item">
+                            <a href="<?php echo site_url('process_detail/measureprice') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                    Add Process detail
+                                </span>
+                            </a>
+                        </li>
+
+                        <li class="pc-item">
+                            <a href="<?php echo site_url('offal_detail /measureprice') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                    Add Offal
+                                </span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
+
+                <li class="pc-item">
+                            <a href="<?php echo site_url('process_detail/measureprice') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                    Add Production
+                                </span>
+                            </a>
+                        </li>
+
+                        <li class="pc-item">
+                            <a href="<?php echo site_url('process_detail/index') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                 Production Summary
+                                </span>
+                            </a>
+                        </li>
+<!-- 
+                        <li class="pc-item">
+                            <a href="<?php // echo site_url('offal_detail/measureprice') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                    Add Offal
+                                </span>
+                            </a>
+                        </li> -->
+                         
+                        <li class="pc-item">
+                            <a href="<?php echo site_url('sale_detail/measureprice') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                    Add Sale
+                                </span>
+                            </a>
+                        </li>
+
+                        <li class="pc-item">
+                            <a href="<?php echo site_url('sale_detail/index') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                 Sales
+                                </span>
+                            </a>
+                        </li>
+
+
+<!-- 
+                        <li class="pc-item">
+                            <a href="<?php //echo site_url('offal_detail/index') ?>" class="pc-link">
+                                <span class="pc-micon">
+                                    <i data-feather="check-circle"></i>
+                                </span>
+                                <span class="pc-mtext">
+                                 Offal
+                                </span>
+                            </a>
+                        </li> -->
 
 
                 <!-- <li class="pc-item">

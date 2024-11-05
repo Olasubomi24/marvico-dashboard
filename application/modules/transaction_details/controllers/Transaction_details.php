@@ -90,7 +90,8 @@ public function index() {
 
     
     public function transaction(){
-        $rev_nets = $this ->utility -> packages();
+        $rev_nets = $this ->utility -> transactions();
+       //print_r( $rev_nets['result']); die;
             $data = array(
                 'title' => 'transaction_details',
                 'content_view' => 'transaction_details/index',

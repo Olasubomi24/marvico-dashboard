@@ -258,8 +258,8 @@ public function delete($id) {
           $send_data = $this->utility->user_creation( $firstname,$lastname,$email, $password);
 
           if ($send_data['status_code'] == 0) {
-              $this->session->set_flashdata('success', 'Password changed successfully');
-              return redirect('dashboard/dash');
+              $this->session->set_flashdata('success', 'Account Create successfully');
+              return redirect('dashboard/index');
           } else {
               $this->session->set_flashdata('error', 'Operation failed');
               return redirect('dashboard/user_account');
